@@ -1,0 +1,241 @@
+openapi: 3.0.3
+info:
+  title: RepCellPOS API
+  version: 1.0.0
+servers:
+  - url: http://localhost:4000
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+security:
+  - bearerAuth: []
+paths:
+  /api/auth/register:
+    post:
+      summary: Registro de usuario
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, email, password]
+              properties:
+                name: { type: string }
+                email: { type: string }
+                password: { type: string }
+      responses:
+        '201': { description: Creado }
+        '409': { description: Email en uso }
+  /api/auth/login:
+    post:
+      summary: Login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string }
+                password: { type: string }
+      responses:
+        '200': { description: OK }
+  /api/auth/me:
+    get:
+      summary: Usuario actual
+      responses:
+        '200': { description: OK }
+  /api/clients:
+    get:
+      summary: Listar clientes
+      responses:
+        '200': { description: OK }
+    post:
+      summary: Crear cliente
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, phone]
+              properties:
+                name: { type: string }
+                phone: { type: string }
+                email: { type: string }
+      responses:
+        '201': { description: Creado }
+  /api/clients/{id}:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema: { type: string }
+    get:
+      summary: Obtener cliente (con equipos)
+      responses:
+        '200': { description: OK }
+    put:
+      summary: Actualizar cliente
+      responses:
+        '200': { description: OK }
+    delete:
+      summary: Eliminar cliente
+      responses:
+        '200': { description: OK }
+  /api/devices:
+    get:
+      summary: Listar equipos
+      parameters:
+        - in: query
+          name: status
+          schema: { type: string }
+        - in: query
+          name: client
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+    post:
+      summary: Crear equipo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [client, brand, model, issue]
+              properties:
+                client: { type: string }
+                brand: { type: string }
+                model: { type: string }
+                issue: { type: string }
+                status: { type: string, enum: ["diagnóstico","en reparación","listo","entregado"] }
+      responses:
+        '201': { description: Creado }
+  /api/devices/{id}:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema: { type: string }
+    get:
+      summary: Obtener equipo (con historial)
+      responses:
+        '200': { description: OK }
+    put:
+      summary: Actualizar equipo
+      responses:
+        '200': { description: OK }
+    delete:
+      summary: Eliminar equipo
+      responses:
+        '200': { description: OK }
+  /api/repairs:
+    get:
+      summary: Listar reparaciones
+      parameters:
+        - in: query
+          name: deviceId
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+    post:
+      summary: Crear reparación (cambio de estado)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [device, status]
+              properties:
+                device: { type: string }
+                status: { type: string, enum: ["diagnóstico","en reparación","listo","entregado"] }
+                comment: { type: string }
+      responses:
+        '201': { description: Creado }
+  /api/inventory:
+    get:
+      summary: Listar inventario
+      responses:
+        '200': { description: OK }
+    post:
+      summary: Crear producto (admin)
+      responses:
+        '201': { description: Creado }
+  /api/inventory/{id}:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema: { type: string }
+    get:
+      summary: Obtener producto
+      responses:
+        '200': { description: OK }
+    put:
+      summary: Actualizar producto (admin)
+      responses:
+        '200': { description: OK }
+    delete:
+      summary: Eliminar producto (admin)
+      responses:
+        '200': { description: OK }
+  /api/inventory/adjust:
+    post:
+      summary: Ajustar stock tras reparación
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [items]
+              properties:
+                items:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      productId: { type: string }
+                      quantityUsed: { type: integer }
+      responses:
+        '200': { description: OK }
+  /api/invoices:
+    get:
+      summary: Listar facturas
+      responses:
+        '200': { description: OK }
+    post:
+      summary: Crear factura
+      responses:
+        '201': { description: Creado }
+  /api/invoices/{id}:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema: { type: string }
+    get:
+      summary: Obtener factura
+      responses:
+        '200': { description: OK }
+    delete:
+      summary: Eliminar factura (admin)
+      responses:
+        '200': { description: OK }
+  /api/invoices/{id}/pdf:
+    get:
+      summary: Descargar PDF de factura
+      responses:
+        '200': { description: PDF }
+  /api/dashboard:
+    get:
+      summary: Resumen para dashboard
+      responses:
+        '200': { description: OK }
