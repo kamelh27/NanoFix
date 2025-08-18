@@ -1,10 +1,11 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { getProductApi, updateProductApi, deleteProductApi } from "@/services/api-inventory";
+import { getProductApi, updateProductApi, deleteProductApi, purchaseProductApi } from "@/services/api-inventory";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { Product } from "@/types";
+import BarcodeScanner from "@/components/BarcodeScanner";
 
 export default function EditProductPage() {
   const { id } = useParams<{ id: string }>();
@@ -12,6 +13,8 @@ export default function EditProductPage() {
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showScanner, setShowScanner] = useState(false);
+  const [savingPurchase, setSavingPurchase] = useState(false);
 
   async function load() {
     try {
@@ -59,6 +62,8 @@ export default function EditProductPage() {
       supplier: (String(form.get("supplier") || "") || undefined) as string | undefined,
       quantity: Number(form.get("quantity") || product.quantity),
       price: Number(form.get("price") || product.price),
+      barcode: (String(form.get("barcode") || "").trim() || undefined) as string | undefined,
+      category: (String(form.get("category") || "").trim() || undefined) as string | undefined,
     };
     try {
       const updated = await updateProductApi(product.id, updates);
@@ -75,6 +80,31 @@ export default function EditProductPage() {
       router.replace("/inventory");
     } catch (e: any) {
       alert(e?.message || "No se pudo eliminar");
+    }
+  };
+
+  const onSubmitPurchase = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!product) return;
+    const form = new FormData(e.currentTarget);
+    const quantity = Number(form.get("p_quantity") || 0);
+    const unitCost = Number(form.get("p_unitCost") || 0);
+    const supplier = String(form.get("p_supplier") || "").trim() || undefined;
+    const notes = String(form.get("p_notes") || "").trim() || undefined;
+    if (quantity <= 0 || unitCost < 0) {
+      alert("Cantidad o costo inválidos");
+      return;
+    }
+    try {
+      setSavingPurchase(true);
+      const { product: updated } = await purchaseProductApi({ productId: product.id, quantity, unitCost, supplier, notes });
+      setProduct(updated);
+      (e.currentTarget as HTMLFormElement).reset();
+      alert("Compra registrada");
+    } catch (e: any) {
+      alert(e?.message || "No se pudo registrar la compra");
+    } finally {
+      setSavingPurchase(false);
     }
   };
 
@@ -97,6 +127,17 @@ export default function EditProductPage() {
           <label className="block text-sm mb-1">Proveedor</label>
           <input name="supplier" defaultValue={product.supplier || ""} className="w-full border rounded-md px-3 py-2 text-sm" />
         </div>
+        <div>
+          <label className="block text-sm mb-1">Categoría</label>
+          <input name="category" defaultValue={product.category || ""} className="w-full border rounded-md px-3 py-2 text-sm" />
+        </div>
+        <div>
+          <label className="block text-sm mb-1">Código de barras</label>
+          <div className="relative">
+            <input name="barcode" defaultValue={product.barcode || ""} className="w-full border rounded-md px-3 py-2 text-sm pr-24" />
+            <button type="button" onClick={() => setShowScanner(true)} className="absolute right-1 top-1/2 -translate-y-1/2 text-xs px-3 py-1 rounded-md border bg-slate-50 hover:bg-slate-100">Escanear</button>
+          </div>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div>
             <label className="block text-sm mb-1">Cantidad</label>
@@ -111,6 +152,42 @@ export default function EditProductPage() {
           <button className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm hover:bg-blue-700">Guardar</button>
         </div>
       </form>
+
+      <form onSubmit={onSubmitPurchase} className="space-y-4 bg-white p-4 rounded-xl border">
+        <h2 className="text-lg font-medium">Registrar compra</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div>
+            <label className="block text-sm mb-1">Cantidad a comprar</label>
+            <input name="p_quantity" type="number" min={1} className="w-full border rounded-md px-3 py-2 text-sm" />
+          </div>
+          <div>
+            <label className="block text-sm mb-1">Costo unitario</label>
+            <input name="p_unitCost" type="number" step="0.01" min={0} className="w-full border rounded-md px-3 py-2 text-sm" />
+          </div>
+        </div>
+        <div>
+          <label className="block text-sm mb-1">Proveedor (opcional)</label>
+          <input name="p_supplier" defaultValue={product.supplier || ""} className="w-full border rounded-md px-3 py-2 text-sm" />
+        </div>
+        <div>
+          <label className="block text-sm mb-1">Notas (opcional)</label>
+          <input name="p_notes" className="w-full border rounded-md px-3 py-2 text-sm" />
+        </div>
+        <div className="flex gap-2">
+          <button disabled={savingPurchase} className="bg-emerald-600 text-white px-4 py-2 rounded-md text-sm hover:bg-emerald-700 disabled:opacity-50">Registrar compra</button>
+        </div>
+      </form>
+      {showScanner && (
+        <BarcodeScanner
+          onDetected={(code) => {
+            // Set the input value imperatively
+            const input = document.querySelector<HTMLInputElement>('input[name="barcode"]');
+            if (input) input.value = code;
+            setShowScanner(false);
+          }}
+          onClose={() => setShowScanner(false)}
+        />
+      )}
     </div>
   );
 }

@@ -2,10 +2,11 @@
 
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { getDeviceApi, deleteDeviceApi, type UIDeviceDetail } from "@/services/api-devices";
-import { addRepairApi } from "@/services/api-repairs";
-import type { DeviceStatus } from "@/types";
+import { addRepairApi, uploadRepairPhotosApi, addRepairPartsApi } from "@/services/api-repairs";
+import { listProductsApi } from "@/services/api-inventory";
+import type { DeviceStatus, Product } from "@/types";
 
 const STATUS_OPTS: { value: DeviceStatus; label: string }[] = [
   { value: "en_reparacion", label: "En reparación" },
@@ -19,14 +20,25 @@ export default function DeviceDetailPage() {
   const [device, setDevice] = useState<UIDeviceDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [files, setFiles] = useState<File[]>([]);
+  const previews = useMemo(() => files.map((f) => URL.createObjectURL(f)), [files]);
+  useEffect(() => { return () => { previews.forEach((u) => URL.revokeObjectURL(u)); }; }, [previews]);
+  const [parts, setParts] = useState<Array<{ productId: string; quantity: number }>>([]);
+  const [uploadingRepairId, setUploadingRepairId] = useState<string | null>(null);
+  const hiddenPhotoInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     const load = async () => {
       try {
         setLoading(true);
         setError(null);
-        const d = await getDeviceApi(id);
+        const [d, inv] = await Promise.all([
+          getDeviceApi(id),
+          listProductsApi().catch(() => []),
+        ]);
         setDevice(d);
+        setProducts(inv);
       } catch (e: any) {
         setError(e?.message || "Error cargando equipo");
       } finally {
@@ -60,7 +72,29 @@ export default function DeviceDetailPage() {
     const status = String(form.get("status")) as DeviceStatus;
     const note = String(form.get("note") || "");
     try {
-      await addRepairApi({ deviceId: device.id, status, comment: note || undefined });
+      const created = await addRepairApi({ deviceId: device.id, status, comment: note || undefined });
+      // Upload photos selected in this form
+      if (files.length) {
+        try {
+          await uploadRepairPhotosApi(created._id, files);
+        } catch (err: any) {
+          console.warn("Upload repair photos failed:", err?.message || err);
+          alert("Actualización creada, pero falló la subida de fotos.");
+        }
+      }
+      // Consume selected parts
+      const cleanParts = parts.filter(p => p.productId && p.quantity > 0);
+      if (cleanParts.length) {
+        try {
+          await addRepairPartsApi(created._id, cleanParts);
+        } catch (err: any) {
+          const msg = err?.message || "No se pudieron consumir los productos (stock insuficiente?)";
+          alert(msg);
+        }
+      }
+      // reset local UI state
+      setFiles([]);
+      setParts([]);
       (e.currentTarget as HTMLFormElement).reset();
       const refreshed = await getDeviceApi(id);
       setDevice(refreshed);
@@ -99,13 +133,72 @@ export default function DeviceDetailPage() {
             <div><span className="text-slate-500">Ingreso:</span> {new Date(device.intakeDate).toLocaleString()}</div>
           </div>
 
-          <form onSubmit={onUpdate} className="mt-4 flex flex-col md:flex-row gap-3 items-start">
+          <form onSubmit={onUpdate} className="mt-4 flex flex-col gap-3 items-start">
             <select name="status" defaultValue={device.status} className="border rounded-md px-3 py-2 text-sm">
               {STATUS_OPTS.map((s) => (
                 <option key={s.value} value={s.value}>{s.label}</option>
               ))}
             </select>
-            <input name="note" placeholder="Nota (opcional)" className="flex-1 border rounded-md px-3 py-2 text-sm w-full" />
+            <input name="note" placeholder="Nota (opcional)" className="border rounded-md px-3 py-2 text-sm w-full" />
+
+            <div className="w-full">
+              <label className="block text-sm mb-1">Fotos de esta actualización (opcional)</label>
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={(e) => {
+                  const list = Array.from(e.target.files || []);
+                  const accepted = list.filter((f) => f.size <= 8 * 1024 * 1024);
+                  if (accepted.length < list.length) alert("Se ignoraron archivos > 8MB");
+                  setFiles(accepted.slice(0, 8));
+                }}
+                className="w-full border rounded-md px-3 py-2 text-sm"
+              />
+              {previews.length > 0 && (
+                <div className="mt-2 grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {previews.map((src, i) => (
+                    <img key={i} src={src} alt={`preview-${i}`} className="h-24 w-full object-cover rounded border" />
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="w-full">
+              <label className="block text-sm mb-1">Consumir productos de inventario (opcional)</label>
+              <div className="space-y-2">
+                {parts.map((row, idx) => (
+                  <div key={idx} className="flex gap-2 items-center">
+                    <select
+                      className="border rounded-md px-2 py-1 text-sm"
+                      value={row.productId}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        setParts(ps => ps.map((p,i)=> i===idx ? { ...p, productId: v } : p));
+                      }}
+                    >
+                      <option value="">Seleccione producto</option>
+                      {products.map(p => (
+                        <option key={p.id} value={p.id}>{p.name} (stock {p.quantity})</option>
+                      ))}
+                    </select>
+                    <input
+                      type="number"
+                      min={1}
+                      className="border rounded-md px-2 py-1 text-sm w-24"
+                      value={row.quantity}
+                      onChange={(e) => {
+                        const q = parseInt(e.target.value || "0", 10) || 0;
+                        setParts(ps => ps.map((p,i)=> i===idx ? { ...p, quantity: q } : p));
+                      }}
+                    />
+                    <button type="button" className="text-red-700 text-sm" onClick={() => setParts(ps => ps.filter((_,i)=> i!==idx))}>Quitar</button>
+                  </div>
+                ))}
+                <button type="button" className="text-sm border px-2 py-1 rounded" onClick={() => setParts(ps => [...ps, { productId: "", quantity: 1 }])}>+ Agregar producto</button>
+              </div>
+            </div>
+
             <button className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm hover:bg-blue-700">Actualizar</button>
           </form>
         </div>
@@ -119,10 +212,42 @@ export default function DeviceDetailPage() {
                   <div className="font-medium">{h.status.replace("_"," ")}</div>
                   {h.note && <div className="text-slate-600">{h.note}</div>}
                 </div>
-                <div className="text-slate-500 whitespace-nowrap">{new Date(h.date).toLocaleString()}</div>
+                <div className="flex items-center gap-3">
+                  <div className="text-slate-500 whitespace-nowrap">{new Date(h.date).toLocaleString()}</div>
+                  <button
+                    className="text-sm border px-2 py-1 rounded"
+                    onClick={() => {
+                      setUploadingRepairId(h.id);
+                      hiddenPhotoInputRef.current?.click();
+                    }}
+                  >Subir fotos</button>
+                </div>
               </li>
             ))}
           </ul>
+          {/* hidden input for uploading photos to an existing repair */}
+          <input
+            ref={hiddenPhotoInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            className="hidden"
+            onChange={async (e) => {
+              const list = Array.from(e.target.files || []);
+              const accepted = list.filter((f) => f.size <= 8 * 1024 * 1024).slice(0,8);
+              if (!uploadingRepairId || accepted.length === 0) { e.currentTarget.value = ""; return; }
+              try {
+                await uploadRepairPhotosApi(uploadingRepairId, accepted);
+                const refreshed = await getDeviceApi(id);
+                setDevice(refreshed);
+              } catch (err: any) {
+                alert(err?.message || "No se pudieron subir las fotos");
+              } finally {
+                setUploadingRepairId(null);
+                e.currentTarget.value = "";
+              }
+            }}
+          />
         </div>
       </section>
     </div>

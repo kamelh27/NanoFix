@@ -8,6 +8,7 @@ import { formatCurrency, formatDate } from "@/lib/format";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import Cookies from "js-cookie";
+import { getLogo, absoluteLogoUrl, getBrandSettings } from "@/services/api-branding";
 
 export default function InvoiceDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -19,6 +20,8 @@ export default function InvoiceDetailPage() {
   const [device, setDevice] = useState<any>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const printRef = useRef<HTMLDivElement>(null);
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [brandName, setBrandName] = useState<string>("");
 
   useEffect(() => {
     let active = true;
@@ -39,6 +42,35 @@ export default function InvoiceDetailPage() {
     })();
     return () => { active = false; };
   }, [id]);
+
+  // Fetch branding logo and name for display/print
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const [resLogo, resSettings] = await Promise.all([getLogo(), getBrandSettings()]);
+        if (!active) return;
+        setLogoUrl(absoluteLogoUrl(resLogo.url));
+        setBrandName(resSettings?.name || "");
+      } catch {}
+    })();
+    return () => { active = false; };
+  }, []);
+
+  // Listen for live branding updates (from settings page) and refresh logo/name
+  useEffect(() => {
+    const onBrandingUpdated = async () => {
+      try {
+        const [resLogo, resSettings] = await Promise.all([getLogo(), getBrandSettings()]);
+        setLogoUrl(absoluteLogoUrl(resLogo.url));
+        setBrandName(resSettings?.name || "");
+      } catch {}
+    };
+    window.addEventListener("branding-updated", onBrandingUpdated);
+    return () => {
+      window.removeEventListener("branding-updated", onBrandingUpdated);
+    };
+  }, []);
 
   if (loading) {
     return <div>Cargando...</div>;
@@ -305,9 +337,9 @@ export default function InvoiceDetailPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-semibold">Factura</h1>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2 sm:justify-end">
           <button onClick={onExportPDF} className="text-sm border px-3 py-2 rounded-md hover:bg-slate-50">Exportar PDF</button>
           <button onClick={onServerPDF} className="text-sm border px-3 py-2 rounded-md hover:bg-slate-50">PDF (Servidor)</button>
           <button onClick={onDelete} className="text-sm border px-3 py-2 rounded-md text-red-700 hover:bg-red-50">Eliminar</button>
@@ -316,9 +348,15 @@ export default function InvoiceDetailPage() {
       </div>
 
       <div ref={contentRef} id="invoice-print" className="bg-white rounded-xl border p-6 text-sm">
-        <div className="flex items-start justify-between gap-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
           <div>
-            <div className="text-xl font-semibold">NanoFix</div>
+            <div className="flex items-center gap-3">
+              {logoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={logoUrl} alt="Logo" className="h-7 w-auto" crossOrigin="anonymous" />
+              ) : null}
+              <div className="text-xl font-semibold">{brandName || "NanoFix"}</div>
+            </div>
             <div className="text-slate-600">Taller de reparación</div>
           </div>
           <div className="text-right">
@@ -346,7 +384,7 @@ export default function InvoiceDetailPage() {
         </div>
 
         <div className="mt-6 overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full min-w-[600px]">
             <thead className="bg-slate-50 text-slate-600">
               <tr>
                 <th className="text-left p-2">Descripción</th>
@@ -368,11 +406,11 @@ export default function InvoiceDetailPage() {
           </table>
         </div>
 
-        <div className="mt-6 flex items-center justify-end gap-8">
+        <div className="mt-6 flex flex-wrap items-center justify-end gap-x-8 gap-y-2">
           <div className="text-slate-500">Subtotal</div>
           <div className="font-semibold">{formatCurrency(subtotal)}</div>
         </div>
-        <div className="flex items-center justify-end gap-8 mt-2">
+        <div className="mt-2 flex flex-wrap items-center justify-end gap-x-8 gap-y-2">
           <div className="text-slate-500">Total</div>
           <div className="text-xl font-bold">{formatCurrency(total)}</div>
         </div>
@@ -400,7 +438,13 @@ export default function InvoiceDetailPage() {
       >
         <div style={{ display: "flex", justifyContent: "space-between", gap: "24px" }}>
           <div>
-            <div style={{ fontSize: "18px", fontWeight: 600 }}>NanoFix</div>
+            {logoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={logoUrl} alt="Logo" style={{ height: "28px", width: "auto" }} crossOrigin="anonymous" />
+            ) : null}
+            <div style={{ display: "inline-block", marginLeft: logoUrl ? "8px" : 0, fontSize: "18px", fontWeight: 600 }}>
+              {brandName || "NanoFix"}
+            </div>
             <div style={{ color: "#475569" }}>Taller de reparación</div>
           </div>
           <div style={{ textAlign: "right" }}>

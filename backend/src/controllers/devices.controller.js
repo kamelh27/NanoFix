@@ -1,5 +1,6 @@
 const Device = require('../models/Device');
 const Repair = require('../models/Repair');
+const path = require('path');
 
 exports.list = async (req, res, next) => {
   try {
@@ -44,5 +45,23 @@ exports.remove = async (req, res, next) => {
     if (!device) return res.status(404).json({ message: 'Device not found' });
     await Repair.deleteMany({ device: device._id });
     res.json({ message: 'Device deleted' });
+  } catch (err) { next(err); }
+};
+
+exports.addPhotos = async (req, res, next) => {
+  try {
+    const id = req.params.id;
+    const device = await Device.findById(id);
+    if (!device) return res.status(404).json({ message: 'Device not found' });
+
+    const files = Array.isArray(req.files) ? req.files : [];
+    if (!files.length) return res.status(400).json({ message: 'No files uploaded' });
+
+    const base = `/uploads/devices/${id}/`;
+    const urls = files.map((f) => base + path.basename(f.path));
+    device.photos = [...(device.photos || []), ...urls];
+    await device.save();
+
+    res.status(201).json({ photos: urls, device });
   } catch (err) { next(err); }
 };

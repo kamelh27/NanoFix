@@ -2,21 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  LayoutDashboard,
-  Users,
-  Wrench,
-  Package,
-  ReceiptText,
-} from "lucide-react";
-
-const nav = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/clients", label: "Clientes", icon: Users },
-  { href: "/devices", label: "Equipos", icon: Wrench },
-  { href: "/inventory", label: "Inventario", icon: Package },
-  { href: "/invoices", label: "Facturas", icon: ReceiptText },
-];
+import { nav } from "./nav";
+import BrandMark from "./BrandMark";
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -24,8 +11,8 @@ export default function Sidebar() {
   return (
     <aside className="hidden md:flex md:flex-col w-64 shrink-0 border-r bg-white/80 backdrop-blur">
       <div className="h-16 flex items-center px-6 border-b">
-        <Link href="/dashboard" className="font-semibold text-blue-700">
-          NanoFix
+        <Link href="/dashboard" className="inline-flex items-center gap-2">
+          <BrandMark height={24} />
         </Link>
       </div>
       <nav className="flex-1 p-2">

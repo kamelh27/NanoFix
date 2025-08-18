@@ -57,7 +57,7 @@ export default function IncomePage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-semibold">Ingresos por fecha</h1>
         <Link href="/invoices" className="text-sm border px-3 py-2 rounded-md">Volver</Link>
       </div>
@@ -72,7 +72,7 @@ export default function IncomePage() {
             <label className="block text-sm mb-1">Hasta</label>
             <input type="datetime-local" value={to} onChange={(e) => setTo(e.target.value)} className="w-full border rounded-md px-3 py-2 text-sm" />
           </div>
-          <div className="md:col-span-2 flex items-center gap-4">
+          <div className="md:col-span-2 flex flex-wrap items-center gap-x-4 gap-y-2 md:justify-end">
             <div className="text-slate-500">Total</div>
             <div className="text-2xl font-bold">{formatCurrency(total)}</div>
           </div>
@@ -82,33 +82,35 @@ export default function IncomePage() {
       <div className="bg-white rounded-xl border overflow-hidden">
         {loading && <div className="p-6 text-center text-slate-500">Cargando...</div>}
         {error && !loading && <div className="p-6 text-center text-red-600">{error}</div>}
-        <table className="w-full text-sm">
-          <thead className="bg-slate-50 text-slate-600">
-            <tr>
-              <th className="text-left p-3">Fecha</th>
-              <th className="text-left p-3">Cliente</th>
-              <th className="text-left p-3">Total</th>
-              <th className="p-3 text-right">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {inRange.map(({ invoice, client }) => (
-              <tr key={invoice.id} className="border-t">
-                <td className="p-3">{formatDate(invoice.date)}</td>
-                <td className="p-3">{client?.name || "Cliente"}</td>
-                <td className="p-3 font-medium">{formatCurrency(invoice.total)}</td>
-                <td className="p-3 text-right">
-                  <Link href={`/invoices/${invoice.id}`} className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded-md border hover:bg-slate-50">Ver</Link>
-                </td>
-              </tr>
-            ))}
-            {!loading && !error && inRange.length === 0 && (
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[600px] text-sm">
+            <thead className="bg-slate-50 text-slate-600">
               <tr>
-                <td colSpan={4} className="p-6 text-center text-slate-500">Sin resultados en el rango</td>
+                <th className="text-left p-3">Fecha</th>
+                <th className="text-left p-3">Cliente</th>
+                <th className="text-left p-3">Total</th>
+                <th className="p-3 text-right">Acciones</th>
               </tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {inRange.map(({ invoice, client }) => (
+                <tr key={invoice.id} className="border-t">
+                  <td className="p-3">{formatDate(invoice.date)}</td>
+                  <td className="p-3">{client?.name || "Cliente"}</td>
+                  <td className="p-3 font-medium">{formatCurrency(invoice.total)}</td>
+                  <td className="p-3 text-right">
+                    <Link href={`/invoices/${invoice.id}`} className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded-md border hover:bg-slate-50">Ver</Link>
+                  </td>
+                </tr>
+              ))}
+              {!loading && !error && inRange.length === 0 && (
+                <tr>
+                  <td colSpan={4} className="p-6 text-center text-slate-500">Sin resultados en el rango</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

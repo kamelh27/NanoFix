@@ -56,6 +56,28 @@ export async function apiPost<T>(path: string, body?: any, init?: RequestInit): 
   return handle<T>(res);
 }
 
+// For multipart/form-data uploads. Do NOT set Content-Type manually; the browser sets it with boundary.
+export async function apiUpload<T>(path: string, form: FormData, init?: RequestInit): Promise<T> {
+  const headers: HeadersInit = { ...(authHeaders() as Record<string, string>) };
+  if (init?.headers) {
+    if (init.headers instanceof Headers) {
+      init.headers.forEach((v, k) => { (headers as any)[k] = v; });
+    } else if (Array.isArray(init.headers)) {
+      for (const [k, v] of init.headers) (headers as any)[k] = String(v);
+    } else {
+      Object.assign(headers as any, init.headers as Record<string, string>);
+    }
+  }
+  const res = await fetch(`${BASE_URL}${path}`, {
+    method: "POST",
+    credentials: "include",
+    headers,
+    body: form,
+    ...init,
+  });
+  return handle<T>(res);
+}
+
 export async function apiPut<T>(path: string, body?: any, init?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE_URL}${path}`, {
     method: "PUT",

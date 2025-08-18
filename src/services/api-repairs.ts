@@ -1,4 +1,4 @@
-import { apiGet, apiPost } from "@/lib/api";
+import { apiGet, apiPost, apiUpload, apiPut } from "@/lib/api";
 import type { DeviceStatus } from "@/types";
 
 interface ApiRepairItem {
@@ -26,4 +26,23 @@ export async function addRepairApi(payload: { deviceId: string; status: DeviceSt
 export async function listRepairsByDeviceApi(deviceId: string): Promise<ApiRepairItem[]> {
   const params = new URLSearchParams({ deviceId });
   return apiGet<ApiRepairItem[]>(`/api/repairs?${params.toString()}`);
+}
+
+export async function updateRepairApi(id: string, payload: Partial<{ status: DeviceStatus; comment: string }>): Promise<ApiRepairItem> {
+  const body: any = {};
+  if (payload.status) body.status = toApiStatus(payload.status);
+  if (typeof payload.comment === "string") body.comment = payload.comment;
+  return apiPut<ApiRepairItem>(`/api/repairs/${id}`, body);
+}
+
+export async function uploadRepairPhotosApi(id: string, files: File[]): Promise<string[]> {
+  const form = new FormData();
+  for (const f of files) form.append("photos", f);
+  const res = await apiUpload<{ photos: string[] }>(`/api/repairs/${id}/photos`, form);
+  return res.photos || [];
+}
+
+export async function addRepairPartsApi(id: string, items: Array<{ productId: string; quantity: number }>): Promise<{ parts: Array<{ product: string; quantity: number }> }> {
+  const res = await apiPost<{ parts: Array<{ product: string; quantity: number }> }>(`/api/repairs/${id}/parts`, { items });
+  return res;
 }

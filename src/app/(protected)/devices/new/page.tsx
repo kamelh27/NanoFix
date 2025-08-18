@@ -3,9 +3,9 @@
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { listClientsApi } from "@/services/api-clients";
-import { createDeviceApi } from "@/services/api-devices";
+import { createDeviceApi, uploadDevicePhotosApi } from "@/services/api-devices";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 
@@ -43,6 +43,17 @@ export default function NewDevicePage() {
     };
     load();
   }, []);
+  function toLocalDatetimeInputValue(d: Date) {
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
+
+  const [files, setFiles] = useState<File[]>([]);
+  const previews = useMemo(() => files.map((f) => URL.createObjectURL(f)), [files]);
+  useEffect(() => {
+    return () => { previews.forEach((u) => URL.revokeObjectURL(u)); };
+  }, [previews]);
+
   const {
     register,
     handleSubmit,
@@ -52,13 +63,13 @@ export default function NewDevicePage() {
     defaultValues: {
       clientId: preClientId,
       status: "en_reparacion",
-      intakeDate: new Date().toISOString().slice(0, 16),
+      intakeDate: toLocalDatetimeInputValue(new Date()),
     },
   });
 
   const onSubmit = async (data: FormData) => {
     try {
-      await createDeviceApi({
+      const created = await createDeviceApi({
         clientId: data.clientId,
         brand: data.brand,
         model: data.model,
@@ -66,6 +77,14 @@ export default function NewDevicePage() {
         status: data.status,
         intakeDate: new Date(data.intakeDate).toISOString(),
       });
+      if (files.length) {
+        try {
+          await uploadDevicePhotosApi(created.id, files);
+        } catch (e: any) {
+          console.warn("Upload photos failed:", e?.message || e);
+          alert("Equipo creado, pero falló la subida de fotos. Puedes intentar subirlas luego desde el detalle.");
+        }
+      }
       router.replace("/devices");
     } catch (e: any) {
       alert(e?.message || "No se pudo crear el equipo");
@@ -117,6 +136,31 @@ export default function NewDevicePage() {
             <label className="block text-sm mb-1">Fecha de ingreso</label>
             <input type="datetime-local" {...register("intakeDate")} className="w-full border rounded-md px-3 py-2 text-sm" />
           </div>
+        </div>
+        <div>
+          <label className="block text-sm mb-1">Fotos de evidencia (opcional)</label>
+          <input
+            type="file"
+            accept="image/*"
+            multiple
+            onChange={(e) => {
+              const list = Array.from(e.target.files || []);
+              const accepted = list.filter((f) => f.size <= 8 * 1024 * 1024);
+              if (accepted.length < list.length) alert("Se ignoraron archivos > 8MB");
+              setFiles(accepted.slice(0, 8));
+            }}
+            className="w-full border rounded-md px-3 py-2 text-sm"
+          />
+          <p className="text-xs text-slate-500 mt-1">Hasta 8 imágenes. Máx 8MB c/u.</p>
+          {previews.length > 0 && (
+            <div className="mt-2 grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {previews.map((src, i) => (
+                <div key={i} className="relative">
+                  <img src={src} alt={`preview-${i}`} className="h-24 w-full object-cover rounded border" />
+                </div>
+              ))}
+            </div>
+          )}
         </div>
         <div className="flex gap-2">
           <button disabled={isSubmitting} className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm hover:bg-blue-700">Guardar</button>

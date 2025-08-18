@@ -41,7 +41,16 @@ export default function NewInvoicePage() {
     defaultValues: {
       clientId: preClientId,
       deviceId: "",
-      date: new Date().toISOString().slice(0, 16),
+      // Local current datetime in input format YYYY-MM-DDTHH:mm (avoid UTC toISOString which shifts time)
+      date: (() => {
+        const now = new Date();
+        const yyyy = now.getFullYear();
+        const mm = String(now.getMonth() + 1).padStart(2, "0");
+        const dd = String(now.getDate()).padStart(2, "0");
+        const hh = String(now.getHours()).padStart(2, "0");
+        const mi = String(now.getMinutes()).padStart(2, "0");
+        return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
+      })(),
       items: [{ description: "Diagnóstico", quantity: 1, unitPrice: 0 }],
     },
   });
@@ -90,10 +99,13 @@ export default function NewInvoicePage() {
 
   const onSubmit = async (data: FormData) => {
     try {
+      // Convert the local datetime (YYYY-MM-DDTHH:mm) to an ISO string so the backend records the exact moment
+      const isoDate = data.date ? new Date(data.date).toISOString() : undefined;
       await createInvoiceApi({
         client: data.clientId,
         device: data.deviceId || undefined,
         items: data.items.map((it) => ({ description: it.description, quantity: Number(it.quantity), unitPrice: Number(it.unitPrice) })),
+        date: isoDate,
       });
       router.replace("/invoices");
     } catch (e: any) {
@@ -131,12 +143,12 @@ export default function NewInvoicePage() {
         </div>
 
         <div>
-          <div className="flex items-center justify-between mb-2">
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
             <h2 className="font-medium">Conceptos</h2>
             <button type="button" onClick={() => append({ description: "", quantity: 1, unitPrice: 0 })} className="text-sm border px-3 py-1.5 rounded-md">Agregar</button>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full min-w-[600px] text-sm">
               <thead className="bg-slate-50 text-slate-600">
                 <tr>
                   <th className="text-left p-2">Descripción</th>
@@ -175,12 +187,12 @@ export default function NewInvoicePage() {
           {errors.items && <p className="text-xs text-red-600 mt-1">{errors.items.message as string}</p>}
         </div>
 
-        <div className="flex items-center justify-end gap-4">
+        <div className="flex flex-wrap items-center justify-end gap-x-4 gap-y-2">
           <div className="text-sm text-slate-500">Total</div>
           <div className="text-xl font-semibold">{formatCurrency(total)}</div>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <button disabled={isSubmitting} className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm hover:bg-blue-700">Guardar</button>
           <Link href="/invoices" className="px-4 py-2 rounded-md text-sm border">Cancelar</Link>
         </div>

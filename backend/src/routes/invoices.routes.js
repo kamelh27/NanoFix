@@ -16,6 +16,7 @@ router.post('/', [
   body('items.*.quantity').isInt({ min: 1 }),
   body('items.*.unitPrice').isFloat({ min: 0 }),
   body('items.*.product').optional().isMongoId(),
+  body('date').optional().isISO8601(),
   body('notes').optional().isString(),
 ], validate, create);
 

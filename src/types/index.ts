@@ -32,6 +32,8 @@ export interface Product {
   id: ID;
   name: string;
   supplier?: string;
+  barcode?: string;
+  category?: string;
   quantity: number;
   price: number; // unit price
   createdAt: string;
@@ -51,4 +53,56 @@ export interface Invoice {
   items: InvoiceItem[];
   total: number;
   date: string;
+}
+
+// Accounting & Reports
+export type TransactionType = "income" | "expense";
+
+export interface Transaction {
+  id: ID;
+  date: string; // ISO
+  type: TransactionType;
+  amount: number;
+  description: string;
+  category?: string;
+  // Optional links to inventory
+  productId?: ID;
+  quantity?: number;
+  productName?: string;
+}
+
+export interface DailySummary {
+  date: string; // day start ISO
+  income: number;
+  expense: number;
+  net: number;
+  openingBalance: number;
+  closingBalance: number;
+  transactions: Transaction[];
+}
+
+export interface RangeDaySummary {
+  date: string; // YYYY-MM-DD
+  income: number;
+  expense: number;
+  net: number;
+}
+
+export interface ReportSummaryRow {
+  bucket: string; // day/week/month key
+  income: number;
+  expense: number;
+  net: number;
+}
+
+export interface TopProductRow {
+  productId?: ID;
+  name: string;
+  quantity: number;
+  value: number;
+}
+
+export interface ExpensesByCategoryRow {
+  category: string;
+  total: number;
 }

@@ -36,9 +36,9 @@ export default function InvoicesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-semibold flex items-center gap-2"><ReceiptText className="h-6 w-6 text-blue-700"/> Facturas</h1>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 sm:justify-end">
           <Link href="/invoices/income" className="inline-flex items-center gap-2 border text-sm px-3 py-2 rounded-md hover:bg-slate-50">
             Ingresos
           </Link>
@@ -51,36 +51,38 @@ export default function InvoicesPage() {
       <div className="bg-white rounded-xl border overflow-hidden">
         {loading && <div className="p-6 text-center text-slate-500">Cargando...</div>}
         {error && !loading && <div className="p-6 text-center text-red-600">{error}</div>}
-        <table className="w-full text-sm">
-          <thead className="bg-slate-50 text-slate-600">
-            <tr>
-              <th className="text-left p-3">Fecha</th>
-              <th className="text-left p-3">Cliente</th>
-              <th className="text-left p-3">Total</th>
-              <th className="p-3 text-right">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map(({ invoice: i, client }) => (
-              <tr key={i.id} className="border-t">
-                <td className="p-3">{formatDate(i.date)}</td>
-                <td className="p-3">{client?.name || "Cliente"}</td>
-                <td className="p-3 font-medium">{formatCurrency(i.total)}</td>
-                <td className="p-3">
-                  <div className="flex items-center justify-end gap-2">
-                    <Link href={`/invoices/${i.id}`} className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded-md border hover:bg-slate-50">Ver</Link>
-                    <button onClick={() => onDelete(i.id)} className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded-md border text-red-700 hover:bg-red-50"><Trash2 className="h-3 w-3"/> Eliminar</button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-            {!loading && !error && rows.length === 0 && (
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[600px] text-sm">
+            <thead className="bg-slate-50 text-slate-600">
               <tr>
-                <td colSpan={4} className="p-6 text-center text-slate-500">Sin facturas</td>
+                <th className="text-left p-3">Fecha</th>
+                <th className="text-left p-3">Cliente</th>
+                <th className="text-left p-3">Total</th>
+                <th className="p-3 text-right">Acciones</th>
               </tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {rows.map(({ invoice: i, client }) => (
+                <tr key={i.id} className="border-t">
+                  <td className="p-3">{formatDate(i.date)}</td>
+                  <td className="p-3">{client?.name || "Cliente"}</td>
+                  <td className="p-3 font-medium">{formatCurrency(i.total)}</td>
+                  <td className="p-3">
+                    <div className="flex items-center justify-end gap-2">
+                      <Link href={`/invoices/${i.id}`} className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded-md border hover:bg-slate-50">Ver</Link>
+                      <button onClick={() => onDelete(i.id)} className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded-md border text-red-700 hover:bg-red-50"><Trash2 className="h-3 w-3"/> Eliminar</button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {!loading && !error && rows.length === 0 && (
+                <tr>
+                  <td colSpan={4} className="p-6 text-center text-slate-500">Sin facturas</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

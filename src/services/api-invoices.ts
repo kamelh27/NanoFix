@@ -52,6 +52,7 @@ export async function createInvoiceApi(payload: {
   device?: string;
   items: { description: string; quantity: number; unitPrice: number; product?: string }[];
   notes?: string;
+  date?: string; // optional local datetime (YYYY-MM-DDTHH:mm or with seconds)
 }): Promise<Invoice> {
   const data = await apiPost<ApiInvoice>("/api/invoices", payload);
   return toUI(data).invoice;
@@ -62,7 +63,10 @@ export async function deleteInvoiceApi(id: string): Promise<void> {
 }
 
 export function serverPdfUrl(id: string) {
-  return apiUrl(`/api/invoices/${id}/pdf`);
+  let tz: string | undefined;
+  try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone; } catch {}
+  const qs = tz ? `?tz=${encodeURIComponent(tz)}` : "";
+  return apiUrl(`/api/invoices/${id}/pdf${qs}`);
 }
 
 export async function incomeBetweenApi(from: Date, to: Date): Promise<number> {

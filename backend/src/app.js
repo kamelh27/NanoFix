@@ -1,4 +1,5 @@
 const express = require('express');
+const path = require('path');
 const cors = require('cors');
 const morgan = require('morgan');
 const helmet = require('helmet');
@@ -14,10 +15,18 @@ const repairRoutes = require('./routes/repairs.routes');
 const inventoryRoutes = require('./routes/inventory.routes');
 const invoiceRoutes = require('./routes/invoices.routes');
 const dashboardRoutes = require('./routes/dashboard.routes');
+const accountingRoutes = require('./routes/accounting.routes');
+const reportsRoutes = require('./routes/reports.routes');
+const brandingRoutes = require('./routes/branding.routes');
 
 const app = express();
 
-app.use(helmet());
+app.use(helmet({
+  // Allow images and other resources to be embedded cross-origin (e.g., from Next.js app on another port)
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+  // Disable COEP to avoid requiring CORS isolation for canvases (helps html2canvas)
+  crossOriginEmbedderPolicy: false,
+}));
 // Reflect request origin to support credentials; optionally restrict via CORS_ORIGIN list
 const origins = process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',').map(s => s.trim()) : null;
 app.use(cors({
@@ -34,6 +43,9 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(compression());
 
+// Static files for uploaded images
+app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
+
 app.get('/', (_req, res) => {
   res.json({ name: 'RepCellPOS API', version: '1.0.0' });
 });
@@ -45,6 +57,9 @@ app.use('/api/repairs', repairRoutes);
 app.use('/api/inventory', inventoryRoutes);
 app.use('/api/invoices', invoiceRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/accounting', accountingRoutes);
+app.use('/api/reports', reportsRoutes);
+app.use('/api/branding', brandingRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

@@ -1,4 +1,4 @@
-import { apiDelete, apiGet, apiPost } from "@/lib/api";
+import { apiDelete, apiGet, apiPost, apiUpload } from "@/lib/api";
 import type { DeviceStatus } from "@/types";
 
 interface ApiDevice {
@@ -67,6 +67,7 @@ export interface UIDeviceDetail {
   status: DeviceStatus;
   intakeDate: string; // ISO
   history: UIDeviceHistoryItem[];
+  photos?: string[];
 }
 
 export async function getDeviceApi(id: string): Promise<UIDeviceDetail> {
@@ -81,6 +82,7 @@ export async function getDeviceApi(id: string): Promise<UIDeviceDetail> {
     status: fromApiStatus(d.status),
     intakeDate: d.fechaIngreso || d.createdAt,
     history: (d.history || []).map((h) => ({ id: h._id, status: fromApiStatus(h.status), note: h.comment, date: h.at })),
+    photos: (d as any).photos || [],
   };
 }
 
@@ -118,9 +120,17 @@ export async function createDeviceApi(payload: {
     status: fromApiStatus(d.status),
     intakeDate: d.fechaIngreso || d.createdAt,
     history: [],
+    photos: (d as any).photos || [],
   };
 }
 
 export async function deleteDeviceApi(id: string): Promise<void> {
   await apiDelete(`/api/devices/${id}`);
+}
+
+export async function uploadDevicePhotosApi(id: string, files: File[]): Promise<string[]> {
+  const form = new FormData();
+  for (const f of files) form.append("photos", f);
+  const res = await apiUpload<{ photos: string[] }>(`/api/devices/${id}/photos`, form);
+  return res.photos || [];
 }

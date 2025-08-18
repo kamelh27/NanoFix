@@ -8,6 +8,7 @@ const DeviceSchema = new mongoose.Schema({
   status: { type: String, enum: ['diagnóstico', 'en reparación', 'listo', 'entregado'], default: 'diagnóstico' },
   fechaIngreso: { type: Date, default: Date.now },
   fechaEntrega: { type: Date },
+  photos: { type: [String], default: [] },
 }, { timestamps: true });
 
 module.exports = mongoose.model('Device', DeviceSchema);
