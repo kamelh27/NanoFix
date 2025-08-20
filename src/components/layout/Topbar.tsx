@@ -12,6 +12,7 @@ export default function Topbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const onLogout = () => {
     Cookies.remove("auth_token");
+    Cookies.remove("user_role");
     router.replace("/login");
   };
   return (

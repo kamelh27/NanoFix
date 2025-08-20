@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { X } from "lucide-react";
 import { nav } from "./nav";
 import BrandMark from "./BrandMark";
+import Cookies from "js-cookie";
 
 type Props = {
   open: boolean;
@@ -14,6 +15,8 @@ type Props = {
 
 export default function MobileSidebar({ open, onClose }: Props) {
   const pathname = usePathname();
+  const role = (Cookies.get("user_role") as "admin" | "technician" | undefined) || "admin";
+  const items = role === "admin" ? nav : nav.filter((n) => n.href === "/devices");
 
   useEffect(() => {
     onClose();
@@ -34,7 +37,7 @@ export default function MobileSidebar({ open, onClose }: Props) {
         </div>
         <nav className="flex-1 p-2 overflow-y-auto">
           <ul className="space-y-1">
-            {nav.map((item) => {
+            {items.map((item) => {
               const Icon = item.icon;
               const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
               return (

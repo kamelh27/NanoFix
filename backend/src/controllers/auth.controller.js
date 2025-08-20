@@ -13,6 +13,21 @@ exports.register = async (req, res, next) => {
     const exists = await User.findOne({ email });
     if (exists) return res.status(409).json({ message: 'Email already in use' });
     const count = await User.countDocuments();
+    // Only allow public bootstrap for the very first user (admin). After that, only an authenticated admin may create users.
+    if (count > 0) {
+      const auth = req.headers.authorization || '';
+      const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
+      if (!token) return res.status(403).json({ message: 'Only admin can create users' });
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const requester = await User.findById(decoded.id);
+        if (!requester || requester.role !== 'admin') {
+          return res.status(403).json({ message: 'Only admin can create users' });
+        }
+      } catch (e) {
+        return res.status(403).json({ message: 'Only admin can create users' });
+      }
+    }
     const role = count === 0 ? 'admin' : 'technician';
     const user = await User.create({ name, email, password, role });
     const token = signToken(user);

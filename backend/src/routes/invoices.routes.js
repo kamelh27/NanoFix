@@ -5,6 +5,7 @@ const { list, create, get, remove, pdf, income } = require('../controllers/invoi
 const { protect, authorize } = require('../middlewares/auth');
 
 router.use(protect);
+router.use(authorize('admin'));
 
 router.get('/', list);
 
@@ -21,7 +22,7 @@ router.post('/', [
 ], validate, create);
 
 router.get('/:id', [param('id').isMongoId()], validate, get);
-router.delete('/:id', [authorize('admin'), param('id').isMongoId()], validate, remove);
+router.delete('/:id', [param('id').isMongoId()], validate, remove);
 router.get('/:id/pdf', [param('id').isMongoId()], validate, pdf);
 
 router.get('/income/range', [

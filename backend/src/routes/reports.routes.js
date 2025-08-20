@@ -1,10 +1,11 @@
 const router = require('express').Router();
 const { query } = require('express-validator');
 const validate = require('../middlewares/validate');
-const { protect } = require('../middlewares/auth');
+const { protect, authorize } = require('../middlewares/auth');
 const ctrl = require('../controllers/reports.controller');
 
 router.use(protect);
+router.use(authorize('admin'));
 
 const rangeValidators = [
   query('from').optional().isISO8601(),

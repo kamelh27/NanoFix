@@ -3,7 +3,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const sharp = require('sharp');
-const { protect } = require('../middlewares/auth');
+const { protect, authorize } = require('../middlewares/auth');
 
 // Ensure directory exists
 function ensureDir(dir) {
@@ -43,7 +43,7 @@ router.get('/settings', (_req, res) => {
 });
 
 // Update brand settings (name)
-router.put('/settings', protect, (req, res) => {
+router.put('/settings', protect, authorize('admin'), (req, res) => {
   try {
     const name = typeof req.body?.name === 'string' ? req.body.name.trim() : '';
     ensureDir(BRAND_DIR);
@@ -73,7 +73,7 @@ const upload = multer({
   },
 });
 
-router.post('/logo', protect, upload.single('logo'), async (req, res) => {
+router.post('/logo', protect, authorize('admin'), upload.single('logo'), async (req, res) => {
   if (!req.file) return res.status(400).json({ message: 'No file uploaded' });
   try {
     ensureDir(BRAND_DIR);

@@ -4,7 +4,6 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
 import { loginApi } from "@/services/api-auth";
 
 const schema = z.object({
@@ -26,8 +25,12 @@ export default function LoginPage() {
 
   const onSubmit = async (data: FormData) => {
     try {
-      await loginApi(data.email, data.password);
-      router.replace(from);
+      const user = await loginApi(data.email, data.password);
+      if (user.role === "technician") {
+        router.replace("/devices");
+      } else {
+        router.replace(from);
+      }
     } catch (e: any) {
       alert(e?.message || "Error al iniciar sesión");
     }
@@ -73,9 +76,7 @@ export default function LoginPage() {
           Entrar
         </button>
       </form>
-      <p className="text-xs text-slate-600 mt-4">
-        ¿No tienes cuenta? <Link className="text-blue-700 hover:underline" href="/register">Regístrate</Link>
-      </p>
+      <p className="text-xs text-slate-600 mt-4">¿Necesitas acceso? Contacta a un administrador.</p>
     </div>
   );
 }

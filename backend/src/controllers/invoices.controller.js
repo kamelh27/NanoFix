@@ -154,7 +154,10 @@ exports.pdf = async (req, res, next) => {
               drewLogo = true;
             }
             if (drewLogo && brandName) {
-              try { doc.fontSize(16).text(brandName, x + 150, y + 10, { continued: false }); } catch {}
+              try {
+                doc.fillColor('#1d4ed8').fontSize(16).text(brandName, x + 150, y + 10, { continued: false });
+                doc.fillColor('#111827');
+              } catch {}
             }
             if (drewLogo) doc.moveDown(2);
           } catch {}
@@ -165,7 +168,8 @@ exports.pdf = async (req, res, next) => {
     // If no logo was drawn but we have a brand name, render it at the top-left.
     if (!drewLogo && brandName) {
       try {
-        doc.fontSize(16).text(brandName, doc.x, doc.y, { continued: false });
+        doc.fillColor('#1d4ed8').fontSize(16).text(brandName, doc.x, doc.y, { continued: false });
+        doc.fillColor('#111827');
         doc.moveDown(2);
       } catch {}
     }

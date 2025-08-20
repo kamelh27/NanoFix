@@ -355,7 +355,7 @@ export default function InvoiceDetailPage() {
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={logoUrl} alt="Logo" className="h-7 w-auto" crossOrigin="anonymous" />
               ) : null}
-              <div className="text-xl font-semibold">{brandName || "NanoFix"}</div>
+              <div className="text-xl font-semibold text-blue-700">{brandName || "NanoFix"}</div>
             </div>
             <div className="text-slate-600">Taller de reparación</div>
           </div>
@@ -442,7 +442,7 @@ export default function InvoiceDetailPage() {
               // eslint-disable-next-line @next/next/no-img-element
               <img src={logoUrl} alt="Logo" style={{ height: "28px", width: "auto" }} crossOrigin="anonymous" />
             ) : null}
-            <div style={{ display: "inline-block", marginLeft: logoUrl ? "8px" : 0, fontSize: "18px", fontWeight: 600 }}>
+            <div style={{ display: "inline-block", marginLeft: logoUrl ? "8px" : 0, fontSize: "18px", fontWeight: 600, color: "#1d4ed8" }}>
               {brandName || "NanoFix"}
             </div>
             <div style={{ color: "#475569" }}>Taller de reparación</div>

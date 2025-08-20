@@ -8,5 +8,6 @@ export const nav = [
   { href: "/invoices", label: "Facturas", icon: ReceiptText },
   { href: "/accounting", label: "Contabilidad", icon: Banknote },
   { href: "/reports", label: "Reportes", icon: BarChart3 },
+  { href: "/settings/users", label: "Usuarios", icon: Users },
   { href: "/settings/branding", label: "Ajustes", icon: Settings },
 ];

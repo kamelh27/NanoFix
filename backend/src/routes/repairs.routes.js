@@ -2,11 +2,12 @@ const router = require('express').Router();
 const { body, query, param } = require('express-validator');
 const validate = require('../middlewares/validate');
 const { list, create, update, addPhotos, addParts } = require('../controllers/repairs.controller');
-const { protect } = require('../middlewares/auth');
+const { protect, authorize } = require('../middlewares/auth');
 const { normalizeStatusRaw, CANONICAL } = require('../utils/status');
 const upload = require('../middlewares/upload');
 
 router.use(protect);
+router.use(authorize('admin', 'technician'));
 
 router.get('/', [
   query('deviceId').optional().isMongoId(),

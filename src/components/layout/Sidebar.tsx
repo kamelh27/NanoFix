@@ -4,20 +4,24 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { nav } from "./nav";
 import BrandMark from "./BrandMark";
+import Cookies from "js-cookie";
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const role = (Cookies.get("user_role") as "admin" | "technician" | undefined) || "admin";
+  const items = role === "admin" ? nav : nav.filter((n) => n.href === "/devices");
+  const homeHref = role === "technician" ? "/devices" : "/dashboard";
 
   return (
     <aside className="hidden md:flex md:flex-col w-64 shrink-0 border-r bg-white/80 backdrop-blur">
       <div className="h-16 flex items-center px-6 border-b">
-        <Link href="/dashboard" className="inline-flex items-center gap-2">
+        <Link href={homeHref} className="inline-flex items-center gap-2">
           <BrandMark height={24} />
         </Link>
       </div>
       <nav className="flex-1 p-2">
         <ul className="space-y-1">
-          {nav.map((item) => {
+          {items.map((item) => {
             const Icon = item.icon;
             const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
             return (

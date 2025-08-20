@@ -5,6 +5,7 @@ const { protect, authorize } = require('../middlewares/auth');
 const ctrl = require('../controllers/accounting.controller');
 
 router.use(protect);
+router.use(authorize('admin'));
 
 // List transactions
 router.get('/transactions', [

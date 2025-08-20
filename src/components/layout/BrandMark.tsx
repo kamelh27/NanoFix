@@ -13,7 +13,7 @@ type Props = {
 export default function BrandMark({
   height = 24,
   className = "",
-  textClassName = "ml-2 text-sm font-medium",
+  textClassName = "ml-2 text-sm font-semibold text-blue-700",
   alt = "Logo",
 }: Props) {
   const [url, setUrl] = useState<string | null>(null);

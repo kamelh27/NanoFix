@@ -39,8 +39,7 @@ router.delete('/:id', [
 ], validate, remove);
 
 router.post('/adjust', [
-  // technicians can adjust stock after a repair as well
-  authorize('admin', 'technician'),
+  authorize('admin'),
   body('items').isArray({ min: 1 }),
   body('items.*.productId').isMongoId(),
   body('items.*.quantityUsed').isInt({ min: 1 }),
@@ -58,7 +57,7 @@ router.post('/purchase', [
 
 // Register a sale: decreases product stock and creates an income transaction
 router.post('/sell', [
-  authorize('admin', 'technician'),
+  authorize('admin'),
   body('productId').isMongoId(),
   body('quantity').isInt({ min: 1 }),
   body('unitPrice').isFloat({ min: 0 }),

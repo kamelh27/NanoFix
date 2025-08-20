@@ -2,9 +2,10 @@ const router = require('express').Router();
 const { body, param } = require('express-validator');
 const validate = require('../middlewares/validate');
 const { list, create, get, update, remove } = require('../controllers/clients.controller');
-const { protect } = require('../middlewares/auth');
+const { protect, authorize } = require('../middlewares/auth');
 
 router.use(protect);
+router.use(authorize('admin'));
 
 router.get('/', list);
 router.post('/', [
